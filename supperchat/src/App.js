@@ -1,14 +1,17 @@
 import React, { useRef, useState } from 'react';
 import './App.css';
 
-import firebase from 'firebase/app';
-import 'firebase/firestore';
-import 'firebase/auth';
+import { initializeApp} from 'firebase/app'
+import { getAuth,GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth'
+import { getFirestore, collection, query, orderBy, limit, addDoc, serverTimestamp} from 'firebase/firestore'
+import { getAnalytics} from 'firebase/analytics'
+
+
 
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { useCollectionData } from 'react-firebase-hooks/firestore' 
 
-firebase.initializeApp({
+const firebaseApp = initializeApp({
   apiKey: "AIzaSyAj8GHoofj2PHMzB8tzFBmR9SuNjSM99Ho",
   authDomain: "chatroom-92582.firebaseapp.com",
   projectId: "chatroom-92582",
@@ -18,51 +21,55 @@ firebase.initializeApp({
   measurementId: "G-NZNN41YSP4"
 });
 
-const auth = firebase.auth();
-const firestore = firebase.firestore();
+const auth = getAuth(firebaseApp);
+const firestore = getFirestore(firebaseApp);
+const analytics = getAnalytics(firebaseApp)
 
-const [user] = useAuthState(auth)
 
 function App() {
+
+  const [user] = useAuthState(auth)
   return (
     <div className="App">
       <header>
-        
+        <h1>ChatRoom v1.0⚛️🔥💬</h1>
+        <SignOut />
       </header>
       
       <section>
-        {user ? <ChatRoom /> : <SighIn />}
+        {user ? <ChatRoom /> : <SignIn />}
       </section>
     </div>
   );
 }
 
-function SighIn() {
+function SignIn() {
+
   const singInWithGoogle = () => {
-    const provider = new firebase.auth.GoogleAuthProvider();
-    auth.sighInWithPopup(provider)
+    const provider = new GoogleAuthProvider();
+    signInWithPopup(auth, provider)
   }
 
   return (
-    <button onClick={singInWithGoogle}>Sing in with Google</button>
-  )
+    <>
+    <button className='sigh-in' onClick={singInWithGoogle}>Sing in with Google</button>
+    <p>Do not violate community guidelines or you are gonna be banned for life!</p>
+    </>
+  )  
 }
 
-function SighOut() {
+function SignOut() {
   return auth.currentUser && (
-
-    <button onClick={() => auth.SighOut()}>Sigh out</button>
+    <button className='sigh-out' onClick={() => signOut()}>Sigh out</button>
   )
 }
 
 function ChatRoom() {
-
   const dummy = useRef()
+  const messagesRef = collection(firestore, 'messages');
+  const q = query(messagesRef, orderBy('createdAt', limit(25)));
 
-  const messagesRef = firebase.collection('message');
-  const query = messagesRef.orderBy('createdAt').limit(25);
-
-  const [messages] = useCollectionData(query, {idField: 'id'});
+  const [messages] = useCollectionData(q, {idField: 'id'});
 
   const [formValue, setFormValue] = useState('');
 
@@ -72,15 +79,14 @@ function ChatRoom() {
 
     const {uid, photoURL} = auth.currentUser;
 
-    await messagesRef.add({
+    await addDoc(messagesRef, {
       text: formValue,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      createdAT: serverTimestamp(),
       uid,
       photoURL
     })
 
     setFormValue('');
-
     dummy.current.scrollIntoView({ behavior: 'smooth'});
   }
 
@@ -88,16 +94,22 @@ function ChatRoom() {
   return (
     <>
       <main>
+
         {messages && messages.map(msg => < ChatMessage key={msg.id} message={msg} />)}
-      </main>
-      <div ref={dummy}></div>
+
+        <span ref={dummy}></span>
+
+      </main>      
 
       <form onSubmit={sendMessage}>
-        <input value={formValue} onChange={(e) => setFormValue(e.target.value)} />
-        <button type='submit'>Post</button>
+
+        <input value={formValue} onChange={(e) => setFormValue(e.target.value)} placeholder='Be nice' />
+
+        <button type='submit' disabled={!formValue} >🕊️</button>
+
       </form>
-    </>
-  )
+    </>)
+  
 }
 
 function ChatMessage(props) {
@@ -105,12 +117,11 @@ function ChatMessage(props) {
 
   const messageClass = uid === auth.currentUser.uid ? 'sent' : 'received';
 
-  return (
+  return (<>
     <div className={`message ${messageClass}`}>
-      <img src={photoURL}/>
+      <img src={photoURL || 'https://api.adorable.io/avatars/23/abott@adorable.png'}/>
       <p>{text}</p>
     </div>
-  )
+    </>)
 }
-
 export default App;

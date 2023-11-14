@@ -12,7 +12,7 @@ body {
   background-color: #181717;
   height: 10vh;
   min-height: 50px;
-  color: white;
+  color: rgb(175, 36, 36);
   position: fixed;
   width: 100%;
   max-width: 728px;
@@ -30,7 +30,7 @@ body {
   flex-direction: column;
   justify-content: center;
   min-height: 100vh;
-  background-color: rgb(40, 37, 53);
+  background-color: rgb(65, 48, 139);
 }
 
 main {
@@ -101,7 +101,7 @@ button:disabled {
 
 
 .sign-in {
-  color: #282c34;
+  color: #821e8b;
   background: white;
   max-width: 400px;
   margin: 0 auto;
